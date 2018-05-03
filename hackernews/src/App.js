@@ -25,29 +25,43 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      // list: list
       list,
+      // 프로퍼티 초기값을 설정한다.
+      searchTerm: '',
     }
-    this.onDismiss = this.onDismiss.bind(this);
+    this.onSearchChange = this.onSearchChange.bind(this);
+  }
+  onSearchChange(e) {
+    this.setState({searchTerm: e.target.value})
   }
   onDismiss(id) {
+    // 이벤트가 발생한 item의 id랑 같지 않은 id의 데이터만 다시 리스트에 담는다.
     const isNotId = item => item.objectID !== id;
     const updatedList = this.state.list.filter(isNotId);
+    // (wrong!!!) this.state.list = updatedList
     this.setState({list: updatedList});
   }
   render() {
     return (
       <div className="APP">
+        <form>
+          <input 
+            type="text"
+            onChange={this.onSearchChange}
+          />
+        </form>
         {this.state.list.map(item => 
-            <div key={item.objectID}>
-              <span><a href={item.url}>{item.title}</a></span>
-              <span>{item.author}</span>
-              <span>{item.num_comments}</span>
-              <span>{item.points}</span>
-              <button 
-                onClick={() => this.onDismiss(item.objectID)} 
-                type="button"
-              >dismiss</button>
-            </div>
+          <div key={item.objectID}>
+            <span><a href={item.url}>{item.title}</a></span>
+            <span>{item.author}</span>
+            <span>{item.num_comments}</span>
+            <span>{item.points}</span>
+            <button 
+              onClick={() => this.onDismiss(item.objectID)} 
+              type="button"
+            >dismiss</button>
+          </div>
         )}
       </div>
     );
