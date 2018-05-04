@@ -21,7 +21,13 @@ const list = [
   },
 ];
 
+// filter 메서드에 searchTerm을 전달하고 조건을 확인하는 함수를 반환하는 함수
+// 고차함수
+const inSearched = searchTerm => item =>
+  item.title.toLowerCase().includes(searchTerm.toLowerCase());
+
 class App extends Component {
+  // this.state를 초기화하는 클래스 생성자를 추가한다.
   constructor(props) {
     super(props);
     this.state = {
@@ -33,6 +39,7 @@ class App extends Component {
     this.onSearchChange = this.onSearchChange.bind(this);
   }
   onSearchChange(e) {
+    // e는 합성이벤트이다.
     this.setState({searchTerm: e.target.value})
   }
   onDismiss(id) {
@@ -43,15 +50,27 @@ class App extends Component {
     this.setState({list: updatedList});
   }
   render() {
+    const {searchTerm, list} = this.state;
+    // 컴포넌트를 분리하고 사용할 프로퍼티를 전달한다.
     return (
       <div className="APP">
+        <Search
+          value={searchTerm}
+          onChange={this.onSearchChange}
+        />
+        <Tabel
+          list={list}
+          pattern={searchTerm}
+          onDismiss={this.onDismiss}
+        />
         <form>
           <input 
             type="text"
+            value={searchTerm}
             onChange={this.onSearchChange}
           />
         </form>
-        {this.state.list.map(item => 
+        {list.filter(inSearched(searchTerm)).map(item => 
           <div key={item.objectID}>
             <span><a href={item.url}>{item.title}</a></span>
             <span>{item.author}</span>
@@ -66,6 +85,16 @@ class App extends Component {
       </div>
     );
   }
+}
+
+class Search extends Component {
+  render() {
+    const {value, onChange} = this.props;
+  }
+}
+
+class Tabel extends Compoenet {
+
 }
 
 export default App;
