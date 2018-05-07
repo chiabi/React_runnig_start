@@ -196,6 +196,8 @@ class App extends Component {
 <button onClick={this.deleteRow.bind(this, id)}>Delete Row</button>
 ```
 
+※ 이부분에서 어차피 인수를 전달할 거고 화살표 함수를 쓰는 거면 onDismiss는 생성자에 바인딩 안해줘도 되는 거 아니야? 라고 생각했는데 나중에 컴포넌트를 분리해버리면 그 컴포넌트 안에서 호출했을 때 this가 App을 가리키도록 해줘야하므로 결국은 바인딩 해두는 게 맞는거였다;;
+
 ## 2.6 폼과 이벤트
 
 + 목표: 검색어를 입력할 때마다 리스트를 필터링해야한다. - 입력 필드 값이 컴포넌트 내부 상태 값에 저장되어야한다.
@@ -258,7 +260,6 @@ const {
   - state가 변경되면 `render()`메서드가 재실행된다.
   - `searchTerm`에 검색어가 있는지 리스트에서 확인 후 필터링한다.
 
-
 `<input>`,`<textarea>`,`<select>`와 같은 폼 엘리먼트는 HTML로 자신의 상태를 가지고 유저 입력에 따라 업데이트 된다. 이는 리액트에서 제어되지 않은 컴포넌트라 부른다.
 
 리액트에서 이런 제어되지 않은 컴포넌트(Uncontrolled component)를 제어되는 컴포넌트(controlled component)로 만들어야한다.
@@ -292,4 +293,162 @@ return (
       </div>
     )}
 ```
+
+## 2.9. 컴포넌트 분리
+
+~~뇌가 생각하기를 그만두었다. 아하하하하하하ㅏ핳~~
+
+App 컴포넌트가 커졌다. 계속 기능을 추가하고 개발하면 점점 규모가 커지니까 작은 컴포넌트로 분리하는 작업을 해준다.
+
+### JSX
+
+그 전에 대충 느낌만 알고 넘어간 JSX를 좀 더 보면,
+
+JSX는 React.createElment(component, props, ...children) 함수에 대한 syntactic sugar을 제공할 뿐이다.
+```js
+<MyButton color="blue" shadowSize={2}>
+ Click Me
+</MyButon>
+```
+위 JSX는 아래와 같이 컴파일된다.
+```js
+React.createElement(
+  MyButton,
+  {color: 'blue', shadowSize: 2},
+  'Click Me'
+)
+```
+
+자식이 없다면 스스로 닫는 형태의 태그를 사용할 수도 있다.
+```js
+<div className="sidebar"/>
+```
+위 JSX는 아래와 같이 컴파일 된다.
+```js
+React.createElement(
+  'div',
+  {className: 'sidebar'},
+  null
+)
+```
+
+대문자로 시작하는 JSX 태그는 React 컴포넌트를 가리킨다.  
+이 태그들은 같은 이름을 가진 변수를 참고하도록 컴파일되며, JSX`<Foo>` 표현을 사용하려면, 반드시 스코프 안에 `Foo`가 있어야 한다.
+
+JSX는 `React.createElement`를 호출해 컴파일 하기 때문에, 반드시 JSX 코드의 스코프 안에 React 라이브러리가 있어야 한다.
+```js
+import React from 'react';
+import CustomButton from './CustomButton';
+
+// 자바스크립트에서 직접적으로 참조하지 않더라도
+// React와 CustomButton이 import 되어야한다.
+function WarningButton() {
+  // return React.createElement(CustomButton, {color: 'red'}, null);
+  return <CustomButton color="red" />;
+}
+```
+
+**사용자 정의 컴포넌트는 대문자로 시작해야 한다.**  
+(소문자로 시작한다면 대문자로 시작하는 변수에 할당한 뒤 사용한다.)
+
+`<div>`, `<span>`같은 빌트인 컴포넌트는 `React.createElement`에 `div`, `span`같은 문자열로 전달된다.
+
+`<Foo/>`같이 대문자로 시작하는 타입은 `React.createElement(Foo)`로 컴파일된다.  
+(자바스크립트 파일 내 정의되었거나 import한 컴포넌트여야 한다!)
+
+### JSX안에서 prop 사용
+
+JSX에서 props를 정의하는 몇가지 다른 방법이 있다.
+
+어떠한 자바스크립트 표현식이든지 `{}`로 둘러싸서 prop으로 전달할 수 있다.
+```js
+<MyComponent foo={1 + 2 + 3 + 4} />
+``` 
+`MyComponent`에서 `props.foo` 값은 `1 + 2 + 3 + 4` 표현식의 평가되어 얻어지는 값인 `10`이다.
+
+`if` 구문과 `for` 루프는 자바스크립트에서 표현식이 아니므로, JSX에서 바로 사용할 수 없다.  
+대신 다음과 같이 JSX 코드 바깥에 넣어 사용할 수 있다.
+```js
+function NumberDescriber(props) {
+  let description;
+  if (props.number % 2 === 0) {
+    description = <strong>even</strong>;
+  } else {
+    description = <i>odd</i>;
+  }
+  return <div>{props.number} is an {description} number</div>;
+}
+```
+
++ 문자열 리터럴은 그대로 prop으로 넘겨줄 수도 있고, `{}`로 감쌀 수도 있다.  
++ prop에 아무값도 전달하지 않으면, 기본값은 `true` 이다.
++ `props`객체를 이미 가지고 있다면 전체를 그대로 JSX에 전달하기 위해 sprad 연산자를 사용할 수 있다.
+
+### 컴포넌트 렌더링
+
+React가 유저가 정의한 컴포넌트를 나타내는 요소를 볼 때 JSX 속성을 이 컴포넌트에 단일 객체로 전달한다.  
+이 객체를 `props` 라고 부른다.
+
+이 코드는 'Hello, Sara'를 페이지에 렌더링한다.
+```js
+function Welcome(props) {
+  return <h1>Hello, {props.name}</h1>;
+}
+
+const element = <Welcome name="Sara" />;
+
+ReactDOM.render(
+  element,
+  document.getElementById('root')
+);
+```
+`<Welcome name="Sara" />` 요소로 `ReactDOM.render()` 를 호출한다.  
+React가 `{name: 'Sara'}`를 props로 하여 Welcome 컴포넌트를 호출한다.  
+`Welcome` 컴포넌트가 그 결과로 `<h1>Hello, Sara</h1>` 요소를 반환한다.  
+React DOM이 `<h1>Hello, Sara</h1>`과 일치하도록 DOM을 효율적으로 업데이트 한다.
+
+### Props는 읽기 전용이다.
+
+컴포넌트를 함수나 클래스 중 어떤것으로 선언했건간에 props를 수정할 수 없다.  
+**모든 React 컴포넌트는 props와 관련한 동작을 할 때 순수함수처럼 동작해야한다.**
+
+(어플리케이션 UI는 동적이며, 시간이 지남에 따라 변한다.  
+`state`는 React컴포넌트가 이러한 룰을 어기지 않고 유저 액션, 네트워크 응답과 그 밖의 것들에 대한 응답으로 시간 경과에 따라 출력을 변경할 수 있게 한다.)
+
+~~아이고야 뭔소리고 이게~~
+
+## 2.10 구성 가능한 컴포넌트
+
++ [리액트 Composition 모델](https://reactjs.org/docs/composition-vs-inheritance.html)  
+
+`children` prop은 알 수 없는 데이터 구조가 자식 엘리먼트로 전달됨을 의미한다.
+
+일부 컴포넌트는 자식을 미리 알 수 없다. (예: Sidebar, Dialog)  
+이러한 컴포넌트는 특수한 `children` prop을 사용해 자식 요소를 출력에 직접 전달하는 것이 좋다.  
+(JSX를 중첩해 다른 컴포넌트가 임의의 자식을 전달할 수 있다.)
+```js
+function FancyBorder(props) {
+  return (
+    // {porps.children}을 div 안에 렌더링한다.
+    <div className={'FancyBorder FancyBorder-' + poprs.color}>
+      {props.children}
+    </div>
+  );
+}
+function welcomeDialog() {
+  return (
+    // 이 안의 것들은 FancyBorder 컴포넌트의 children prop을 통해 전달된다.
+    <FancyBorder color="blue">
+      <h1 className="Dialog-title">
+        Welcom
+      </h1>
+      <p className="Dialog-message">
+        Thank you for visiting our spacecraft!
+      </p>
+    </FancyBorder>
+  )
+}
+```
+
+## 2.11 재사용 가능한 컴포넌트
 

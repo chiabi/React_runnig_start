@@ -36,6 +36,7 @@ class App extends Component {
       // 프로퍼티 초기값을 설정한다.
       searchTerm: '',
     }
+    this.onDismiss = this.onDismiss.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
   }
   onSearchChange(e) {
@@ -57,31 +58,14 @@ class App extends Component {
         <Search
           value={searchTerm}
           onChange={this.onSearchChange}
-        />
-        <Tabel
+        >
+        search
+        </Search>
+        <Table
           list={list}
           pattern={searchTerm}
           onDismiss={this.onDismiss}
         />
-        <form>
-          <input 
-            type="text"
-            value={searchTerm}
-            onChange={this.onSearchChange}
-          />
-        </form>
-        {list.filter(inSearched(searchTerm)).map(item => 
-          <div key={item.objectID}>
-            <span><a href={item.url}>{item.title}</a></span>
-            <span>{item.author}</span>
-            <span>{item.num_comments}</span>
-            <span>{item.points}</span>
-            <button 
-              onClick={() => this.onDismiss(item.objectID)} 
-              type="button"
-            >dismiss</button>
-          </div>
-        )}
       </div>
     );
   }
@@ -89,12 +73,40 @@ class App extends Component {
 
 class Search extends Component {
   render() {
-    const {value, onChange} = this.props;
+    const {value, onChange, children} = this.props;
+    return (
+      <form>
+        {children}
+        <input 
+          type="text"
+          value={value}
+          onChange={onChange}
+        />
+      </form>
+    ) 
   }
 }
 
-class Tabel extends Compoenet {
-
+class Table extends Component {
+  render() {
+    const {list, pattern, onDismiss} = this.props;
+    return (
+      <div>
+      {list.filter(inSearched(pattern)).map(item => 
+        <div key={item.objectID}>
+          <span><a href={item.url}>{item.title}</a></span>
+          <span>{item.author}</span>
+          <span>{item.num_comments}</span>
+          <span>{item.points}</span>
+          <button 
+            onClick={() => onDismiss(item.objectID)} 
+            type="button"
+          >dismiss</button>
+        </div>
+      )}
+      </div>
+    )
+  }
 }
 
 export default App;
